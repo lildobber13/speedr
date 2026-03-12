@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Zap } from 'lucide-react';
+import { Zap, Maximize2, Minimize2 } from 'lucide-react';
 import FileUpload from '@/components/FileUpload';
 import WordDisplay from '@/components/WordDisplay';
 import PlaybackControls from '@/components/PlaybackControls';
@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 
 type Theme = 'dark' | 'light' | 'sepia';
 
