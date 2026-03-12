@@ -21,6 +21,7 @@ const Index = () => {
   const [theme, setTheme] = useState<Theme>('dark');
   const [isLoading, setIsLoading] = useState(false);
   const [fileName, setFileName] = useState<string>();
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const musicRef = useRef<MusicPlayerHandle>(null);
 
   // Scaling config
