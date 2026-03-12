@@ -1,18 +1,19 @@
-import { Music, Volume2, VolumeX, SkipForward, Pause, Play } from 'lucide-react';
-import { useRef, useState, useEffect, useCallback } from 'react';
+import { Music, Volume2, VolumeX } from 'lucide-react';
+import { useRef, useState, useEffect, useCallback, useImperativeHandle, forwardRef } from 'react';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 
-type Vibe = 'lofi' | 'ambient' | 'piano' | 'guitar';
+type Vibe = 'lofi' | 'ambient' | 'piano' | 'guitar' | 'none';
 
 const VIBES: { id: Vibe; label: string; emoji: string }[] = [
+  { id: 'none', label: 'No Music', emoji: '🔇' },
   { id: 'lofi', label: 'Lofi Chill', emoji: '☁️' },
   { id: 'ambient', label: 'Dark Ambient', emoji: '🌑' },
   { id: 'piano', label: 'Piano', emoji: '🎹' },
   { id: 'guitar', label: 'Guitar Warmth', emoji: '🎸' },
 ];
 
-const TRACKS: Record<Vibe, { name: string; file: string }[]> = {
+const TRACKS: Record<Exclude<Vibe, 'none'>, { name: string; file: string }[]> = {
   lofi: [
     { name: 'Midnight Stroll', file: '/music/Midnight_Stroll.wav' },
     { name: 'No Problem', file: '/music/No_Problem.wav' },
@@ -63,56 +64,88 @@ const TRACKS: Record<Vibe, { name: string; file: string }[]> = {
   ],
 };
 
-const MusicPlayer = () => {
+export interface MusicPlayerHandle {
+  play: () => void;
+  pause: () => void;
+}
+
+const MusicPlayer = forwardRef<MusicPlayerHandle>((_props, ref) => {
   const audioRef = useRef<HTMLAudioElement>(null);
-  const [vibe, setVibe] = useState<Vibe>('lofi');
-  const [currentTrack, setCurrentTrack] = useState<number | null>(null);
+  const [vibe, setVibe] = useState<Vibe>('none');
+  const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [volume, setVolume] = useState(30);
   const [isMuted, setIsMuted] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTrackName, setCurrentTrackName] = useState('');
 
-  const tracks = TRACKS[vibe];
+  const startPlayback = useCallback(() => {
+    if (vibe === 'none' || !audioRef.current) return;
+    const tracks = TRACKS[vibe];
+    audioRef.current.src = tracks[currentTrackIndex].file;
+    audioRef.current.volume = isMuted ? 0 : volume / 100;
+    audioRef.current.play();
+    setCurrentTrackName(tracks[currentTrackIndex].name);
+    setIsPlaying(true);
+  }, [vibe, currentTrackIndex, volume, isMuted]);
 
-  const playTrack = useCallback((index: number) => {
+  const stopPlayback = useCallback(() => {
     if (!audioRef.current) return;
-    if (currentTrack === index && isPlaying) {
-      audioRef.current.pause();
-      setIsPlaying(false);
-      return;
+    audioRef.current.pause();
+    setIsPlaying(false);
+  }, []);
+
+  // Expose play/pause to parent
+  useImperativeHandle(ref, () => ({
+    play: () => {
+      if (vibe === 'none') return;
+      startPlayback();
+    },
+    pause: () => {
+      stopPlayback();
+    },
+  }), [vibe, startPlayback, stopPlayback]);
+
+  // When track ends, play next
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    const handleEnded = () => {
+      if (vibe === 'none') return;
+      const tracks = TRACKS[vibe];
+      const nextIndex = (currentTrackIndex + 1) % tracks.length;
+      setCurrentTrackIndex(nextIndex);
+    };
+    audio.addEventListener('ended', handleEnded);
+    return () => audio.removeEventListener('ended', handleEnded);
+  }, [vibe, currentTrackIndex]);
+
+  // Auto-play when track index changes (if already playing)
+  useEffect(() => {
+    if (isPlaying && vibe !== 'none' && audioRef.current) {
+      const tracks = TRACKS[vibe];
+      audioRef.current.src = tracks[currentTrackIndex].file;
+      audioRef.current.volume = isMuted ? 0 : volume / 100;
+      audioRef.current.play();
+      setCurrentTrackName(tracks[currentTrackIndex].name);
     }
-    audioRef.current.src = tracks[index].file;
-    audioRef.current.volume = isMuted ? 0 : volume / 100;
-    audioRef.current.loop = true;
-    audioRef.current.play();
-    setCurrentTrack(index);
-    setIsPlaying(true);
-  }, [currentTrack, isPlaying, volume, isMuted, tracks]);
+  }, [currentTrackIndex]); // intentionally minimal deps - only react to index changes
 
-  const nextTrack = useCallback(() => {
-    const next = currentTrack === null ? 0 : (currentTrack + 1) % tracks.length;
-    if (!audioRef.current) return;
-    audioRef.current.src = tracks[next].file;
-    audioRef.current.volume = isMuted ? 0 : volume / 100;
-    audioRef.current.loop = true;
-    audioRef.current.play();
-    setCurrentTrack(next);
-    setIsPlaying(true);
-  }, [currentTrack, volume, isMuted, tracks]);
+  // Update volume
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = isMuted ? 0 : volume / 100;
+    }
+  }, [volume, isMuted]);
 
   const handleVibeChange = useCallback((newVibe: Vibe) => {
     if (audioRef.current && isPlaying) {
       audioRef.current.pause();
     }
     setVibe(newVibe);
-    setCurrentTrack(null);
+    setCurrentTrackIndex(0);
     setIsPlaying(false);
+    setCurrentTrackName('');
   }, [isPlaying]);
-
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = isMuted ? 0 : volume / 100;
-    }
-  }, [volume, isMuted]);
 
   return (
     <div className="rounded-xl bg-card border border-border p-4 space-y-3">
@@ -124,7 +157,7 @@ const MusicPlayer = () => {
       <audio ref={audioRef} />
 
       {/* Vibe selector */}
-      <div className="grid grid-cols-4 gap-1.5">
+      <div className="grid grid-cols-5 gap-1.5">
         {VIBES.map(({ id, label, emoji }) => (
           <button
             key={id}
@@ -141,53 +174,31 @@ const MusicPlayer = () => {
         ))}
       </div>
 
-      {/* Track list */}
-      <div className="grid grid-cols-2 gap-1.5 max-h-32 overflow-y-auto pr-1">
-        {tracks.map((track, i) => (
-          <button
-            key={track.file}
-            onClick={() => playTrack(i)}
-            className={`text-left text-xs font-body px-2.5 py-2 rounded-lg transition-all truncate
-              ${currentTrack === i
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-secondary/50 text-secondary-foreground hover:bg-secondary'
-              }`}
-          >
-            {currentTrack === i && isPlaying ? '♪ ' : ''}{track.name}
-          </button>
-        ))}
-      </div>
-
-      {/* Playback & volume */}
-      {currentTrack !== null && (
-        <div className="flex items-center gap-2 pt-1">
-          <Button
-            variant="ghost" size="icon"
-            onClick={() => {
-              if (!audioRef.current) return;
-              if (isPlaying) { audioRef.current.pause(); setIsPlaying(false); }
-              else { audioRef.current.play(); setIsPlaying(true); }
-            }}
-            className="h-7 w-7 text-muted-foreground"
-          >
-            {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-          </Button>
-          <Button variant="ghost" size="icon" onClick={nextTrack} className="h-7 w-7 text-muted-foreground">
-            <SkipForward className="w-3.5 h-3.5" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={() => setIsMuted(!isMuted)} className="h-7 w-7 text-muted-foreground">
-            {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
-          </Button>
-          <Slider
-            value={[isMuted ? 0 : volume]}
-            min={0} max={100} step={5}
-            onValueChange={([v]) => { setVolume(v); setIsMuted(false); }}
-            className="flex-1"
-          />
+      {/* Now playing & volume */}
+      {vibe !== 'none' && (
+        <div className="space-y-2">
+          {currentTrackName && (
+            <div className="text-xs text-muted-foreground font-body truncate">
+              {isPlaying ? '♪ ' : ''}{currentTrackName}
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" onClick={() => setIsMuted(!isMuted)} className="h-7 w-7 text-muted-foreground">
+              {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+            </Button>
+            <Slider
+              value={[isMuted ? 0 : volume]}
+              min={0} max={100} step={5}
+              onValueChange={([v]) => { setVolume(v); setIsMuted(false); }}
+              className="flex-1"
+            />
+          </div>
         </div>
       )}
     </div>
   );
-};
+});
+
+MusicPlayer.displayName = 'MusicPlayer';
 
 export default MusicPlayer;

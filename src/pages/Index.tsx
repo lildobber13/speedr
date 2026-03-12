@@ -1,13 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Zap } from 'lucide-react';
 import FileUpload from '@/components/FileUpload';
 import WordDisplay from '@/components/WordDisplay';
 import PlaybackControls from '@/components/PlaybackControls';
 import ThemeSwitcher from '@/components/ThemeSwitcher';
-import MusicPlayer from '@/components/MusicPlayer';
+import MusicPlayer, { MusicPlayerHandle } from '@/components/MusicPlayer';
 import { extractText, tokenizeText } from '@/lib/textExtractor';
-import { useRSVP } from '@/hooks/useRSVP';
+import { useRSVP, ScalingConfig } from '@/hooks/useRSVP';
 import { toast } from 'sonner';
+import { Switch } from '@/components/ui/switch';
+import { Slider } from '@/components/ui/slider';
+import { Label } from '@/components/ui/label';
 
 type Theme = 'dark' | 'light' | 'sepia';
 
@@ -17,8 +20,32 @@ const Index = () => {
   const [theme, setTheme] = useState<Theme>('dark');
   const [isLoading, setIsLoading] = useState(false);
   const [fileName, setFileName] = useState<string>();
+  const musicRef = useRef<MusicPlayerHandle>(null);
 
-  const rsvp = useRSVP(words, wpm);
+  // Scaling config
+  const [scalingEnabled, setScalingEnabled] = useState(false);
+  const [scalingTarget, setScalingTarget] = useState(600);
+
+  const scalingConfig: ScalingConfig = {
+    enabled: scalingEnabled,
+    startWpm: wpm,
+    targetWpm: scalingTarget,
+    stepSize: 25,
+    wordsPerStep: 50,
+  };
+
+  const rsvp = useRSVP(words, wpm, scalingConfig);
+
+  // Coordinate music with reading play/pause
+  const prevPlaying = useRef(false);
+  useEffect(() => {
+    if (rsvp.isPlaying && !prevPlaying.current) {
+      musicRef.current?.play();
+    } else if (!rsvp.isPlaying && prevPlaying.current) {
+      musicRef.current?.pause();
+    }
+    prevPlaying.current = rsvp.isPlaying;
+  }, [rsvp.isPlaying]);
 
   // Apply theme class to document
   useEffect(() => {
@@ -60,7 +87,6 @@ const Index = () => {
       </header>
 
       <main className="flex-1 flex flex-col items-center justify-start px-4 py-6 max-w-2xl mx-auto w-full gap-6">
-        {/* File upload (show when no words or always accessible) */}
         {words.length === 0 ? (
           <div className="w-full space-y-6">
             <div className="text-center space-y-2">
@@ -92,7 +118,46 @@ const Index = () => {
                 currentIndex={rsvp.currentIndex}
                 onSeek={rsvp.seek}
                 disabled={words.length === 0}
+                effectiveWpm={rsvp.effectiveWpm}
               />
+            </div>
+
+            {/* Scaling option */}
+            <div className="w-full rounded-xl bg-card border border-border p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="scaling-toggle" className="text-sm font-body text-foreground cursor-pointer">
+                  🚀 Speed Scaling
+                </Label>
+                <Switch
+                  id="scaling-toggle"
+                  checked={scalingEnabled}
+                  onCheckedChange={setScalingEnabled}
+                />
+              </div>
+              {scalingEnabled && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-4">
+                    <span className="text-xs text-muted-foreground font-body w-20">Target WPM</span>
+                    <Slider
+                      value={[scalingTarget]}
+                      min={Math.max(wpm + 25, 200)}
+                      max={1000}
+                      step={25}
+                      onValueChange={([v]) => setScalingTarget(v)}
+                      className="flex-1"
+                    />
+                    <span className="text-sm font-display text-primary w-12 text-right">{scalingTarget}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground font-body">
+                    Starts at {wpm} WPM, increases by 25 every 50 words up to {scalingTarget} WPM
+                  </p>
+                  {rsvp.isPlaying && (
+                    <p className="text-xs text-primary font-body font-medium">
+                      Current speed: {rsvp.effectiveWpm} WPM
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* File info & change */}
@@ -105,7 +170,7 @@ const Index = () => {
         {/* Settings panel */}
         <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-4">
           <ThemeSwitcher theme={theme} onThemeChange={setTheme} />
-          <MusicPlayer />
+          <MusicPlayer ref={musicRef} />
         </div>
       </main>
     </div>
