@@ -1,20 +1,48 @@
-import * as pdfjsLib from 'pdfjs-dist';
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
+import pdfWorkerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
 import mammoth from 'mammoth';
 
-// Set worker path to match installed pdfjs-dist version
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+const PromiseCompat = Promise as PromiseConstructor & {
+  withResolvers?: <T>() => {
+    promise: Promise<T>;
+    resolve: (value: T | PromiseLike<T>) => void;
+    reject: (reason?: unknown) => void;
+  };
+};
+
+if (!PromiseCompat.withResolvers) {
+  PromiseCompat.withResolvers = function withResolvers<T>() {
+    let resolve!: (value: T | PromiseLike<T>) => void;
+    let reject!: (reason?: unknown) => void;
+    const promise = new Promise<T>((res, rej) => {
+      resolve = res;
+      reject = rej;
+    });
+
+    return { promise, resolve, reject };
+  };
+}
+
+// Use Vite-resolved local worker instead of CDN for production/mobile reliability
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
 export async function extractTextFromPDF(file: File): Promise<string> {
   const arrayBuffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const needsCompatMode = typeof PromiseCompat.withResolvers !== 'function';
+  const documentInit: Record<string, unknown> = { data: arrayBuffer };
+
+  if (needsCompatMode) {
+    documentInit.disableWorker = true;
+  }
+
+  const pdf = await pdfjsLib.getDocument(documentInit as any).promise;
+
   const pages: string[] = [];
 
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i);
     const content = await page.getTextContent();
-    const text = content.items
-      .map((item: any) => item.str)
-      .join(' ');
+    const text = content.items.map((item: any) => item.str).join(' ');
     pages.push(text);
   }
 
@@ -41,7 +69,7 @@ export async function extractText(file: File): Promise<string> {
 
 export function tokenizeText(text: string): string[] {
   return text
-    .replace(/\s*[''\']\s*/g, "'")   // normalize smart quotes & remove spaces around apostrophes
+    .replace(/\s*[''\']\s*/g, "'") // normalize smart quotes & remove spaces around apostrophes
     .replace(/\s+/g, ' ')
     .trim()
     .split(' ')
@@ -60,3 +88,4 @@ export function getPivotIndex(word: string): number {
   if (len <= 9) return 2;
   return 3;
 }
+
