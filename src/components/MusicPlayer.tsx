@@ -162,14 +162,19 @@ const MusicPlayer = forwardRef<MusicPlayerHandle>((_props, ref) => {
           <button
             key={id}
             onClick={() => handleVibeChange(id)}
-            className={`flex flex-col items-center gap-1 py-2 px-1 rounded-lg text-xs font-body transition-all
+            className={`flex flex-col items-center gap-1 py-2 px-1 rounded-lg text-xs font-body transition-all overflow-hidden
               ${vibe === id
                 ? 'bg-primary text-primary-foreground'
                 : 'bg-secondary/50 text-secondary-foreground hover:bg-secondary'
               }`}
           >
             <span className="text-base">{emoji}</span>
-            <span className="truncate w-full text-center" style={{ fontSize: '0.65rem' }}>{label}</span>
+            <span
+              className={`w-full text-center whitespace-nowrap ${vibe === id ? 'animate-marquee' : 'truncate'}`}
+              style={{ fontSize: '0.65rem' }}
+            >
+              {label}
+            </span>
           </button>
         ))}
       </div>
