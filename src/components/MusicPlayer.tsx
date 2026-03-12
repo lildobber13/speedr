@@ -1,27 +1,53 @@
-import { Music, Volume2, VolumeX, Upload } from 'lucide-react';
-import { useRef, useState, useEffect } from 'react';
+import { Music, Volume2, VolumeX, SkipForward, Pause, Play } from 'lucide-react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 
+const TRACKS = [
+  { name: 'Midnight Stroll', file: '/music/Midnight_Stroll.wav' },
+  { name: 'No Problem', file: '/music/No_Problem.wav' },
+  { name: 'Sunny Sidewalk', file: '/music/Sunny_Sidewalk.wav' },
+  { name: 'Tape Warp', file: '/music/Tape_Warp.wav' },
+  { name: 'Any Day Now', file: '/music/Any_Day_Now.wav' },
+  { name: 'Cure My Blues', file: '/music/Cure_My_Blues.wav' },
+  { name: 'Delerious Smile', file: '/music/Delerious_Smile.wav' },
+  { name: 'Everybody Dreams', file: '/music/Everybody_Dreams.wav' },
+  { name: 'Golden Hour', file: '/music/Golden_Hour.wav' },
+  { name: 'Hello Tomorrow', file: '/music/Hello_Tomorrow.wav' },
+];
+
 const MusicPlayer = () => {
   const audioRef = useRef<HTMLAudioElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [trackName, setTrackName] = useState<string | null>(null);
+  const [currentTrack, setCurrentTrack] = useState<number | null>(null);
   const [volume, setVolume] = useState(30);
   const [isMuted, setIsMuted] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !audioRef.current) return;
-    const url = URL.createObjectURL(file);
-    audioRef.current.src = url;
-    audioRef.current.volume = volume / 100;
+  const playTrack = useCallback((index: number) => {
+    if (!audioRef.current) return;
+    if (currentTrack === index && isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+      return;
+    }
+    audioRef.current.src = TRACKS[index].file;
+    audioRef.current.volume = isMuted ? 0 : volume / 100;
     audioRef.current.loop = true;
     audioRef.current.play();
-    setTrackName(file.name);
+    setCurrentTrack(index);
     setIsPlaying(true);
-  };
+  }, [currentTrack, isPlaying, volume, isMuted]);
+
+  const nextTrack = useCallback(() => {
+    const next = currentTrack === null ? 0 : (currentTrack + 1) % TRACKS.length;
+    if (!audioRef.current) return;
+    audioRef.current.src = TRACKS[next].file;
+    audioRef.current.volume = isMuted ? 0 : volume / 100;
+    audioRef.current.loop = true;
+    audioRef.current.play();
+    setCurrentTrack(next);
+    setIsPlaying(true);
+  }, [currentTrack, volume, isMuted]);
 
   useEffect(() => {
     if (audioRef.current) {
@@ -29,71 +55,61 @@ const MusicPlayer = () => {
     }
   }, [volume, isMuted]);
 
-  const toggleMute = () => setIsMuted(!isMuted);
-
-  const togglePlay = () => {
-    if (!audioRef.current || !trackName) return;
-    if (isPlaying) {
-      audioRef.current.pause();
-    } else {
-      audioRef.current.play();
-    }
-    setIsPlaying(!isPlaying);
-  };
-
   return (
     <div className="rounded-xl bg-card border border-border p-4 space-y-3">
       <div className="flex items-center gap-2 text-sm text-muted-foreground font-body">
         <Music className="w-4 h-4" />
-        <span>Background Music</span>
+        <span>Lofi Chill Vibes</span>
       </div>
-      
-      <audio ref={audioRef} />
-      <input
-        ref={inputRef}
-        type="file"
-        accept="audio/*"
-        onChange={handleFile}
-        className="hidden"
-      />
 
-      {trackName ? (
-        <div className="space-y-3">
+      <audio ref={audioRef} />
+
+      {/* Track grid */}
+      <div className="grid grid-cols-2 gap-1.5 max-h-40 overflow-y-auto pr-1">
+        {TRACKS.map((track, i) => (
           <button
-            onClick={togglePlay}
-            className="text-sm text-foreground font-body truncate w-full text-left hover:text-primary transition-colors"
+            key={track.file}
+            onClick={() => playTrack(i)}
+            className={`text-left text-xs font-body px-2.5 py-2 rounded-lg transition-all truncate
+              ${currentTrack === i
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-secondary/50 text-secondary-foreground hover:bg-secondary'
+              }`}
           >
-            {isPlaying ? '▶' : '⏸'} {trackName}
+            {currentTrack === i && isPlaying ? '♪ ' : ''}{track.name}
           </button>
+        ))}
+      </div>
+
+      {/* Playback & volume */}
+      {currentTrack !== null && (
+        <div className="space-y-2 pt-1">
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={toggleMute} className="h-7 w-7 text-muted-foreground">
+            <Button
+              variant="ghost" size="icon"
+              onClick={() => {
+                if (!audioRef.current) return;
+                if (isPlaying) { audioRef.current.pause(); setIsPlaying(false); }
+                else { audioRef.current.play(); setIsPlaying(true); }
+              }}
+              className="h-7 w-7 text-muted-foreground"
+            >
+              {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+            </Button>
+            <Button variant="ghost" size="icon" onClick={nextTrack} className="h-7 w-7 text-muted-foreground">
+              <SkipForward className="w-3.5 h-3.5" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => setIsMuted(!isMuted)} className="h-7 w-7 text-muted-foreground">
               {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
             </Button>
             <Slider
               value={[isMuted ? 0 : volume]}
-              min={0}
-              max={100}
-              step={5}
+              min={0} max={100} step={5}
               onValueChange={([v]) => { setVolume(v); setIsMuted(false); }}
               className="flex-1"
             />
           </div>
-          <button
-            onClick={() => inputRef.current?.click()}
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Change track
-          </button>
         </div>
-      ) : (
-        <Button
-          variant="secondary"
-          onClick={() => inputRef.current?.click()}
-          className="w-full gap-2 text-sm"
-        >
-          <Upload className="w-4 h-4" />
-          Upload music
-        </Button>
       )}
     </div>
   );
