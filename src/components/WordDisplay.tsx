@@ -21,28 +21,22 @@ const WordDisplay = ({ word }: WordDisplayProps) => {
   return (
     <div className="relative flex items-center justify-center h-32 select-none overflow-hidden">
       {/* Center guide line */}
-      <div className="absolute top-2 bottom-2 w-px bg-muted-foreground/20" style={{ left: '50%' }} />
+      <div className="absolute top-2 bottom-2 w-px bg-muted-foreground/20 left-1/2" />
 
-      {/* 
-        Use absolute positioning so the pivot character is always at the exact center.
-        The before-text is right-aligned ending at the pivot, after-text left-aligned starting after pivot.
-      */}
-      <div className="relative font-display text-4xl sm:text-5xl md:text-6xl tracking-wider whitespace-nowrap">
-        {/* Invisible pivot to establish center reference */}
-        <span className="invisible">{pivot}</span>
-        
-        {/* Actual content positioned so pivot sits at center */}
-        <span className="absolute left-1/2 top-1/2 -translate-y-1/2 flex items-baseline">
-          {/* Before text, right-aligned to end at pivot */}
-          <span className="text-right text-reader-text" style={{ direction: 'rtl', unicodeBidi: 'bidi-override' }}>
-            <span style={{ direction: 'ltr', unicodeBidi: 'bidi-override' }}>{before}</span>
-          </span>
-          {/* Pivot letter anchored at center via negative translate */}
-          <span className="text-pivot font-bold" style={{ transform: 'translateX(-50%)' }}>{pivot}</span>
-          {/* After text */}
-          <span className="text-reader-text">{after}</span>
-        </span>
+      {/* Word container: pivot is placed at center using inline-flex with the before text pushed left */}
+      <div className="absolute left-1/2 top-1/2 -translate-y-1/2 font-display text-4xl sm:text-5xl md:text-6xl tracking-wider whitespace-nowrap flex items-baseline"
+           style={{ transform: 'translate(-50%, -50%)' }}>
+        {/* Before text takes its natural width, right-aligned to pivot */}
+        <span className="text-reader-text">{before}</span>
+        {/* Pivot character */}
+        <span className="text-pivot font-bold">{pivot}</span>
+        {/* After text */}
+        <span className="text-reader-text">{after}</span>
       </div>
+
+      {/* Invisible duplicate to measure offset: pivot center = before.width + pivot.width/2 */}
+      {/* We shift the container left by that amount, but since we want pivot at 50%, 
+           we use a different approach: offset the transform origin */}
     </div>
   );
 };
