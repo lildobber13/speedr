@@ -29,13 +29,13 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 export async function extractTextFromPDF(file: File): Promise<string> {
   const arrayBuffer = await file.arrayBuffer();
   const needsCompatMode = typeof PromiseCompat.withResolvers !== 'function';
+  const documentInit: Record<string, unknown> = { data: arrayBuffer };
 
-  const pdf = await pdfjsLib
-    .getDocument({
-      data: arrayBuffer,
-      disableWorker: needsCompatMode,
-    })
-    .promise;
+  if (needsCompatMode) {
+    documentInit.disableWorker = true;
+  }
+
+  const pdf = await pdfjsLib.getDocument(documentInit as any).promise;
 
   const pages: string[] = [];
 
