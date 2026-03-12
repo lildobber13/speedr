@@ -1,12 +1,32 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
-export function useRSVP(words: string[], wpm: number) {
+export interface ScalingConfig {
+  enabled: boolean;
+  startWpm: number;
+  targetWpm: number;
+  stepSize: number;       // WPM increase per step
+  wordsPerStep: number;   // how many words before increasing
+}
+
+export function useRSVP(words: string[], wpm: number, scaling?: ScalingConfig) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [effectiveWpm, setEffectiveWpm] = useState(wpm);
   const intervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wordsAtCurrentStepRef = useRef(0);
 
   const currentWord = words[currentIndex] ?? '';
   const progress = words.length > 0 ? (currentIndex / (words.length - 1)) * 100 : 0;
+
+  // Reset effective WPM when scaling config or base wpm changes
+  useEffect(() => {
+    if (scaling?.enabled) {
+      setEffectiveWpm(scaling.startWpm);
+      wordsAtCurrentStepRef.current = 0;
+    } else {
+      setEffectiveWpm(wpm);
+    }
+  }, [wpm, scaling?.enabled, scaling?.startWpm, scaling?.targetWpm]);
 
   const clearTimer = useCallback(() => {
     if (intervalRef.current) {
@@ -16,17 +36,25 @@ export function useRSVP(words: string[], wpm: number) {
   }, []);
 
   const scheduleNext = useCallback(() => {
-    const delay = 60000 / wpm;
+    const delay = 60000 / effectiveWpm;
     intervalRef.current = setTimeout(() => {
       setCurrentIndex(prev => {
         if (prev >= words.length - 1) {
           setIsPlaying(false);
           return prev;
         }
+        // Handle scaling ramp-up
+        if (scaling?.enabled) {
+          wordsAtCurrentStepRef.current += 1;
+          if (wordsAtCurrentStepRef.current >= scaling.wordsPerStep) {
+            wordsAtCurrentStepRef.current = 0;
+            setEffectiveWpm(current => Math.min(current + scaling.stepSize, scaling.targetWpm));
+          }
+        }
         return prev + 1;
       });
     }, delay);
-  }, [wpm, words.length]);
+  }, [effectiveWpm, words.length, scaling]);
 
   useEffect(() => {
     clearTimer();
@@ -39,16 +67,24 @@ export function useRSVP(words: string[], wpm: number) {
   const playPause = useCallback(() => {
     if (currentIndex >= words.length - 1 && !isPlaying) {
       setCurrentIndex(0);
+      if (scaling?.enabled) {
+        setEffectiveWpm(scaling.startWpm);
+        wordsAtCurrentStepRef.current = 0;
+      }
       setIsPlaying(true);
     } else {
       setIsPlaying(prev => !prev);
     }
-  }, [currentIndex, isPlaying, words.length]);
+  }, [currentIndex, isPlaying, words.length, scaling]);
 
   const restart = useCallback(() => {
     setCurrentIndex(0);
     setIsPlaying(false);
-  }, []);
+    if (scaling?.enabled) {
+      setEffectiveWpm(scaling.startWpm);
+      wordsAtCurrentStepRef.current = 0;
+    }
+  }, [scaling]);
 
   const skipBack = useCallback(() => {
     setCurrentIndex(prev => Math.max(0, prev - 10));
@@ -66,6 +102,10 @@ export function useRSVP(words: string[], wpm: number) {
   useEffect(() => {
     setCurrentIndex(0);
     setIsPlaying(false);
+    if (scaling?.enabled) {
+      setEffectiveWpm(scaling.startWpm);
+      wordsAtCurrentStepRef.current = 0;
+    }
   }, [words]);
 
   return {
@@ -73,6 +113,7 @@ export function useRSVP(words: string[], wpm: number) {
     currentIndex,
     isPlaying,
     progress,
+    effectiveWpm,
     playPause,
     restart,
     skipBack,

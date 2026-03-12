@@ -15,6 +15,7 @@ interface PlaybackControlsProps {
   currentIndex: number;
   onSeek: (index: number) => void;
   disabled: boolean;
+  effectiveWpm?: number;
 }
 
 const PlaybackControls = ({
@@ -30,6 +31,7 @@ const PlaybackControls = ({
   currentIndex,
   onSeek,
   disabled,
+  effectiveWpm,
 }: PlaybackControlsProps) => {
   return (
     <div className="space-y-4">
@@ -100,7 +102,7 @@ const PlaybackControls = ({
           onValueChange={([v]) => onWpmChange(v)}
           className="flex-1"
         />
-        <span className="text-sm font-display text-primary w-12 text-right">{wpm}</span>
+        <span className="text-sm font-display text-primary w-12 text-right">{effectiveWpm ?? wpm}</span>
       </div>
     </div>
   );
