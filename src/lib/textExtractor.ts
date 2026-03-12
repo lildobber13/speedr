@@ -41,6 +41,7 @@ export async function extractText(file: File): Promise<string> {
 
 export function tokenizeText(text: string): string[] {
   return text
+    .replace(/\s*[''\']\s*/g, "'")   // normalize smart quotes & remove spaces around apostrophes
     .replace(/\s+/g, ' ')
     .trim()
     .split(' ')
