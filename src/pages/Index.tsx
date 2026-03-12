@@ -100,8 +100,50 @@ const Index = () => {
           </div>
         ) : (
           <>
+            {/* Fullscreen overlay */}
+            {isFullscreen && (
+              <div className="fixed inset-0 z-50 bg-background flex flex-col items-center justify-center p-6">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsFullscreen(false)}
+                  className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
+                >
+                  <Minimize2 className="w-5 h-5" />
+                </Button>
+                <div className="w-full max-w-3xl">
+                  <WordDisplay word={rsvp.currentWord} />
+                </div>
+                <div className="w-full max-w-2xl mt-8">
+                  <PlaybackControls
+                    isPlaying={rsvp.isPlaying}
+                    onPlayPause={rsvp.playPause}
+                    onRestart={rsvp.restart}
+                    onSkipBack={rsvp.skipBack}
+                    onSkipForward={rsvp.skipForward}
+                    wpm={wpm}
+                    onWpmChange={setWpm}
+                    progress={rsvp.progress}
+                    totalWords={words.length}
+                    currentIndex={rsvp.currentIndex}
+                    onSeek={rsvp.seek}
+                    disabled={words.length === 0}
+                    effectiveWpm={rsvp.effectiveWpm}
+                  />
+                </div>
+              </div>
+            )}
+
             {/* Reader area */}
-            <div className="w-full rounded-2xl bg-reader-bg border border-border p-6 sm:p-8">
+            <div className="w-full rounded-2xl bg-reader-bg border border-border p-6 sm:p-8 relative">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsFullscreen(true)}
+                className="absolute top-2 right-2 text-muted-foreground hover:text-foreground h-7 w-7"
+              >
+                <Maximize2 className="w-4 h-4" />
+              </Button>
               <WordDisplay word={rsvp.currentWord} />
             </div>
 
