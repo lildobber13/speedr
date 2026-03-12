@@ -11,11 +11,11 @@ A sleek, distraction-free RSVP (Rapid Serial Visual Presentation) speed reader b
 - Playback Controls — Play/pause, skip forward/back, seek bar, and restart
 
 **Tech Stack**
-React + TypeScript
-Vite for fast builds
-Tailwind CSS + shadcn/ui components
-pdf.js for PDF parsing
-Mammoth for DOCX parsing
+- React + TypeScript
+- Vite for fast builds
+- Tailwind CSS + shadcn/ui components
+- pdf.js for PDF parsing
+- Mammoth for DOCX parsing
 
 **Getting Started**
 # Clone the repo
