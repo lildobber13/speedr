@@ -22,8 +22,8 @@ function shouldRetryWithoutWorker(error: unknown): boolean {
   );
 }
 
-async function readPdfText(documentInit: Record<string, unknown>): Promise<string> {
-  const pdf = await pdfjsLib.getDocument(documentInit as any).promise;
+async function readPdfText(arrayBuffer: ArrayBuffer): Promise<string> {
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer, disableWorker: true } as any).promise;
   const pages: string[] = [];
 
   for (let i = 1; i <= pdf.numPages; i++) {
@@ -37,24 +37,8 @@ async function readPdfText(documentInit: Record<string, unknown>): Promise<strin
 }
 
 export async function extractTextFromPDF(file: File): Promise<string> {
-  const forceCompatMode = !hasNativePromiseWithResolvers;
-
-  if (forceCompatMode) {
-    const arrayBuffer = await file.arrayBuffer();
-    return readPdfText({ data: arrayBuffer, disableWorker: true });
-  }
-
-  try {
-    const arrayBuffer = await file.arrayBuffer();
-    return await readPdfText({ data: arrayBuffer });
-  } catch (error) {
-    if (shouldRetryWithoutWorker(error)) {
-      // Re-read the file since the original buffer may be detached after worker transfer
-      const freshBuffer = await file.arrayBuffer();
-      return readPdfText({ data: freshBuffer, disableWorker: true });
-    }
-    throw error;
-  }
+  const arrayBuffer = await file.arrayBuffer();
+  return readPdfText(arrayBuffer);
 }
 
 export async function extractTextFromDocx(file: File): Promise<string> {
