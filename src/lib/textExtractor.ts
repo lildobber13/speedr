@@ -1,34 +1,11 @@
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
-import pdfWorkerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
 import mammoth from 'mammoth';
 
-type PromiseWithResolvers = <T>() => {
-  promise: Promise<T>;
-  resolve: (value: T | PromiseLike<T>) => void;
-  reject: (reason?: unknown) => void;
-};
+// Disable the worker entirely to avoid Safari/mobile crashes with
+// ReadableStream async iteration and Promise.withResolvers.
+// Performance impact is negligible for typical document sizes.
+pdfjsLib.GlobalWorkerOptions.workerSrc = '';
 
-const PromiseCompat = Promise as PromiseConstructor & {
-  withResolvers?: PromiseWithResolvers;
-};
-
-const hasNativePromiseWithResolvers = typeof PromiseCompat.withResolvers === 'function';
-
-if (!hasNativePromiseWithResolvers) {
-  PromiseCompat.withResolvers = function withResolvers<T>() {
-    let resolve!: (value: T | PromiseLike<T>) => void;
-    let reject!: (reason?: unknown) => void;
-    const promise = new Promise<T>((res, rej) => {
-      resolve = res;
-      reject = rej;
-    });
-
-    return { promise, resolve, reject };
-  };
-}
-
-// Use Vite-resolved local worker instead of CDN for production/mobile reliability
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
 function extractErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
