@@ -87,7 +87,7 @@ const Index = () => {
         <div className="flex items-center gap-2">
           <Zap className="w-6 h-6 text-primary" />
           <h1 className="text-2xl font-display font-bold tracking-tight text-foreground">
-            Speedr
+            S<span className="text-pivot">p</span>eedr
           </h1>
         </div>
       </header>
