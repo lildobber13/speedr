@@ -7,7 +7,8 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = '';
 
 
 async function readPdfText(arrayBuffer: ArrayBuffer): Promise<string> {
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer, disableWorker: true } as any).promise;
+  const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) });
+  const pdf = await loadingTask.promise;
   const pages: string[] = [];
 
   for (let i = 1; i <= pdf.numPages; i++) {
