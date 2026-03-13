@@ -2,15 +2,19 @@ import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 import pdfWorkerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
 import mammoth from 'mammoth';
 
-const PromiseCompat = Promise as PromiseConstructor & {
-  withResolvers?: <T>() => {
-    promise: Promise<T>;
-    resolve: (value: T | PromiseLike<T>) => void;
-    reject: (reason?: unknown) => void;
-  };
+type PromiseWithResolvers = <T>() => {
+  promise: Promise<T>;
+  resolve: (value: T | PromiseLike<T>) => void;
+  reject: (reason?: unknown) => void;
 };
 
-if (!PromiseCompat.withResolvers) {
+const PromiseCompat = Promise as PromiseConstructor & {
+  withResolvers?: PromiseWithResolvers;
+};
+
+const hasNativePromiseWithResolvers = typeof PromiseCompat.withResolvers === 'function';
+
+if (!hasNativePromiseWithResolvers) {
   PromiseCompat.withResolvers = function withResolvers<T>() {
     let resolve!: (value: T | PromiseLike<T>) => void;
     let reject!: (reason?: unknown) => void;
@@ -26,27 +30,50 @@ if (!PromiseCompat.withResolvers) {
 // Use Vite-resolved local worker instead of CDN for production/mobile reliability
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
-export async function extractTextFromPDF(file: File): Promise<string> {
-  const arrayBuffer = await file.arrayBuffer();
-  const needsCompatMode = typeof PromiseCompat.withResolvers !== 'function';
-  const documentInit: Record<string, unknown> = { data: arrayBuffer };
+function extractErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  return String(error);
+}
 
-  if (needsCompatMode) {
-    documentInit.disableWorker = true;
-  }
+function shouldRetryWithoutWorker(error: unknown): boolean {
+  const message = extractErrorMessage(error).toLowerCase();
+  return (
+    message.includes('withresolvers') ||
+    message.includes('undefined is not a function') ||
+    message.includes('undefined is not a non-null object') ||
+    message.includes("can't convert undefined to object")
+  );
+}
 
+async function readPdfText(documentInit: Record<string, unknown>): Promise<string> {
   const pdf = await pdfjsLib.getDocument(documentInit as any).promise;
-
   const pages: string[] = [];
 
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i);
     const content = await page.getTextContent();
-    const text = content.items.map((item: any) => item.str).join(' ');
+    const text = content.items.map((item) => ('str' in item ? item.str : '')).join(' ');
     pages.push(text);
   }
 
   return pages.join(' ');
+}
+
+export async function extractTextFromPDF(file: File): Promise<string> {
+  const arrayBuffer = await file.arrayBuffer();
+  const baseInit: Record<string, unknown> = { data: arrayBuffer };
+  const forceCompatMode = !hasNativePromiseWithResolvers;
+
+  try {
+    return await readPdfText(
+      forceCompatMode ? { ...baseInit, disableWorker: true } : baseInit
+    );
+  } catch (error) {
+    if (!forceCompatMode && shouldRetryWithoutWorker(error)) {
+      return readPdfText({ ...baseInit, disableWorker: true });
+    }
+    throw error;
+  }
 }
 
 export async function extractTextFromDocx(file: File): Promise<string> {
