@@ -17,12 +17,12 @@ const WordDisplay = ({ word }: WordDisplayProps) => {
   const after = word ? word.slice(pivotIdx + 1) : '';
 
   useEffect(() => {
-    if (containerRef.current && pivotRef.current && wordRef.current) {
-      const containerCenter = containerRef.current.offsetWidth / 2;
-      const pivotRect = pivotRef.current.getBoundingClientRect();
-      const wordRect = wordRef.current.getBoundingClientRect();
-      const pivotCenterInWord = (pivotRect.left - wordRect.left) + pivotRect.width / 2;
-      setOffset(containerCenter - pivotCenterInWord);
+    if (wordRef.current && pivotRef.current) {
+      const wordWidth = wordRef.current.offsetWidth;
+      const pivotLeft = pivotRef.current.offsetLeft;
+      const pivotCenter = pivotLeft + pivotRef.current.offsetWidth / 2;
+      const wordCenter = wordWidth / 2;
+      setOffset(wordCenter - pivotCenter);
     }
   }, [word]);
 
@@ -47,16 +47,18 @@ const WordDisplay = ({ word }: WordDisplayProps) => {
   return (
     <div ref={containerRef} className="relative flex items-center justify-center h-32 select-none overflow-hidden">
       {/* Center guide line */}
-      <div className="absolute top-2 bottom-2 w-px bg-muted-foreground/20 left-1/2" />
+      <div className="absolute top-2 bottom-2 w-px bg-muted-foreground/20 left-1/2 -translate-x-1/2" />
 
-      <div
-        ref={wordRef}
-        className={`font-body font-medium ${getFontSize(word)} tracking-normal whitespace-nowrap`}
-        style={{ transform: `translateX(${offset}px)` }}
-      >
-        <span className="text-reader-text">{before}</span>
-        <span ref={pivotRef} className="text-pivot font-bold">{pivot}</span>
-        <span className="text-reader-text">{after}</span>
+      <div className="relative flex items-center justify-center w-full">
+        <div
+          ref={wordRef}
+          className={`font-body font-medium ${getFontSize(word)} tracking-normal whitespace-nowrap absolute`}
+          style={{ left: '50%', transform: `translateX(-50%)`, marginLeft: `${offset}px` }}
+        >
+          <span className="text-reader-text">{before}</span>
+          <span ref={pivotRef} className="text-pivot font-bold">{pivot}</span>
+          <span className="text-reader-text">{after}</span>
+        </div>
       </div>
     </div>
   );
