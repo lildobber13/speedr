@@ -57,10 +57,13 @@ const Index = () => {
     if (theme === 'light') root.classList.add('theme-light');
   }, [theme]);
 
-  const handleFileSelect = async (file: File) => {
+  const handleFileSelect = useCallback(async (file: File) => {
+    console.log('[Speedr] handleFileSelect called', file.name);
     setIsLoading(true);
     try {
+      console.log('[Speedr] Starting extraction...');
       const text = await extractText(file);
+      console.log('[Speedr] Extraction done, length:', text.length);
       const tokens = tokenizeText(text);
       if (tokens.length === 0) {
         toast.error('No text found in the file.');
@@ -70,11 +73,12 @@ const Index = () => {
       setFileName(file.name);
       toast.success(`Loaded ${tokens.length} words`);
     } catch (err: any) {
+      console.error('[Speedr] Extraction error:', err);
       toast.error(err.message || 'Failed to extract text');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
