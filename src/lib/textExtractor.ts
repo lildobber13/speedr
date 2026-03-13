@@ -1,10 +1,9 @@
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 import mammoth from 'mammoth';
 
-// Disable the worker entirely to avoid Safari/mobile crashes with
-// ReadableStream async iteration and Promise.withResolvers.
-// Performance impact is negligible for typical document sizes.
-pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+// Point workerSrc to a dummy data-URI so pdfjs-dist doesn't complain,
+// while still using disableWorker:true at load time to avoid Safari crashes.
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'data:text/javascript,';
 
 
 
