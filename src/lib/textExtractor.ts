@@ -1,14 +1,14 @@
-import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
+import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
 
-// Point workerSrc to a dummy data-URI so pdfjs-dist doesn't complain,
-// while still using disableWorker:true at load time to avoid Safari crashes.
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'data:text/javascript,';
+// Disable worker to avoid Safari/mobile issues
+pdfjsLib.GlobalWorkerOptions.workerSrc = '';
 
 
 
 async function readPdfText(arrayBuffer: ArrayBuffer): Promise<string> {
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer, disableWorker: true } as any).promise;
+  const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) });
+  const pdf = await loadingTask.promise;
   const pages: string[] = [];
 
   for (let i = 1; i <= pdf.numPages; i++) {
