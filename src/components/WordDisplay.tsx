@@ -17,12 +17,12 @@ const WordDisplay = ({ word }: WordDisplayProps) => {
   const after = word ? word.slice(pivotIdx + 1) : '';
 
   useEffect(() => {
-    if (containerRef.current && pivotRef.current && wordRef.current) {
-      const containerCenter = containerRef.current.offsetWidth / 2;
-      const pivotRect = pivotRef.current.getBoundingClientRect();
-      const wordRect = wordRef.current.getBoundingClientRect();
-      const pivotCenterInWord = (pivotRect.left - wordRect.left) + pivotRect.width / 2;
-      setOffset(containerCenter - pivotCenterInWord);
+    if (wordRef.current && pivotRef.current) {
+      const wordWidth = wordRef.current.offsetWidth;
+      const pivotLeft = pivotRef.current.offsetLeft;
+      const pivotCenter = pivotLeft + pivotRef.current.offsetWidth / 2;
+      const wordCenter = wordWidth / 2;
+      setOffset(wordCenter - pivotCenter);
     }
   }, [word]);
 
