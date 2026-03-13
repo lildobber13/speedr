@@ -1,9 +1,8 @@
-import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
+import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
 
-// Point workerSrc to a dummy data-URI so pdfjs-dist doesn't complain,
-// while still using disableWorker:true at load time to avoid Safari crashes.
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'data:text/javascript,';
+// Disable worker to avoid Safari/mobile issues
+pdfjsLib.GlobalWorkerOptions.workerSrc = '';
 
 
 
