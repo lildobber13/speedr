@@ -123,8 +123,6 @@ const Index = () => {
                     isPlaying={rsvp.isPlaying}
                     onPlayPause={rsvp.playPause}
                     onRestart={rsvp.restart}
-                    onSkipBack={rsvp.skipBack}
-                    onSkipForward={rsvp.skipForward}
                     wpm={wpm}
                     onWpmChange={setWpm}
                     progress={rsvp.progress}
@@ -157,8 +155,6 @@ const Index = () => {
                 isPlaying={rsvp.isPlaying}
                 onPlayPause={rsvp.playPause}
                 onRestart={rsvp.restart}
-                onSkipBack={rsvp.skipBack}
-                onSkipForward={rsvp.skipForward}
                 wpm={wpm}
                 onWpmChange={setWpm}
                 progress={rsvp.progress}
