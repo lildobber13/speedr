@@ -6,6 +6,7 @@ interface WordDisplayProps {
 }
 
 const WordDisplay = ({ word }: WordDisplayProps) => {
+  const containerRef = useRef<HTMLDivElement>(null);
   const wordRef = useRef<HTMLDivElement>(null);
   const pivotRef = useRef<HTMLSpanElement>(null);
   const [offset, setOffset] = useState(0);
@@ -16,8 +17,8 @@ const WordDisplay = ({ word }: WordDisplayProps) => {
   const after = word ? word.slice(pivotIdx + 1) : '';
 
   useEffect(() => {
-    if (wordRef.current && pivotRef.current) {
-      const containerCenter = wordRef.current.offsetWidth / 2;
+    if (containerRef.current && wordRef.current && pivotRef.current) {
+      const containerCenter = containerRef.current.offsetWidth / 2;
       const pivotLeft = pivotRef.current.offsetLeft;
       const pivotCenter = pivotLeft + pivotRef.current.offsetWidth / 2;
       setOffset(containerCenter - pivotCenter);
@@ -27,28 +28,29 @@ const WordDisplay = ({ word }: WordDisplayProps) => {
   if (!word) {
     return (
       <div className="flex items-center justify-center h-32">
-        <span className="font-display text-2xl text-muted-foreground">Ready</span>
+        <span className="font-body text-2xl text-muted-foreground">Ready</span>
       </div>
     );
   }
 
-  // Scale font size down for long words
-  const getFontClass = (w: string) => {
+  // Scale font size based on word length to prevent overflow
+  const getFontSize = (w: string) => {
     const len = w.length;
-    if (len > 20) return 'text-xl sm:text-2xl md:text-3xl';
-    if (len > 14) return 'text-2xl sm:text-3xl md:text-4xl';
-    if (len > 10) return 'text-3xl sm:text-4xl md:text-5xl';
-    return 'text-4xl sm:text-5xl md:text-6xl';
+    if (len > 25) return 'text-base sm:text-lg md:text-xl';
+    if (len > 20) return 'text-lg sm:text-xl md:text-2xl';
+    if (len > 14) return 'text-xl sm:text-2xl md:text-3xl';
+    if (len > 10) return 'text-2xl sm:text-3xl md:text-4xl';
+    return 'text-3xl sm:text-4xl md:text-5xl';
   };
 
   return (
-    <div className="relative flex items-center justify-center h-32 select-none">
+    <div ref={containerRef} className="relative flex items-center justify-center h-32 select-none overflow-hidden">
       {/* Center guide line */}
       <div className="absolute top-2 bottom-2 w-px bg-muted-foreground/20 left-1/2" />
 
       <div
         ref={wordRef}
-        className={`font-display ${getFontClass(word)} tracking-wider whitespace-nowrap`}
+        className={`font-body font-medium ${getFontSize(word)} tracking-normal whitespace-nowrap`}
         style={{ transform: `translateX(${offset}px)` }}
       >
         <span className="text-reader-text">{before}</span>
