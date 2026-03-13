@@ -1,52 +1,15 @@
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
-import pdfWorkerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
 import mammoth from 'mammoth';
 
-type PromiseWithResolvers = <T>() => {
-  promise: Promise<T>;
-  resolve: (value: T | PromiseLike<T>) => void;
-  reject: (reason?: unknown) => void;
-};
+// Disable the worker entirely to avoid Safari/mobile crashes with
+// ReadableStream async iteration and Promise.withResolvers.
+// Performance impact is negligible for typical document sizes.
+pdfjsLib.GlobalWorkerOptions.workerSrc = '';
 
-const PromiseCompat = Promise as PromiseConstructor & {
-  withResolvers?: PromiseWithResolvers;
-};
 
-const hasNativePromiseWithResolvers = typeof PromiseCompat.withResolvers === 'function';
 
-if (!hasNativePromiseWithResolvers) {
-  PromiseCompat.withResolvers = function withResolvers<T>() {
-    let resolve!: (value: T | PromiseLike<T>) => void;
-    let reject!: (reason?: unknown) => void;
-    const promise = new Promise<T>((res, rej) => {
-      resolve = res;
-      reject = rej;
-    });
-
-    return { promise, resolve, reject };
-  };
-}
-
-// Use Vite-resolved local worker instead of CDN for production/mobile reliability
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
-
-function extractErrorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  return String(error);
-}
-
-function shouldRetryWithoutWorker(error: unknown): boolean {
-  const message = extractErrorMessage(error).toLowerCase();
-  return (
-    message.includes('withresolvers') ||
-    message.includes('undefined is not a function') ||
-    message.includes('undefined is not a non-null object') ||
-    message.includes("can't convert undefined to object")
-  );
-}
-
-async function readPdfText(documentInit: Record<string, unknown>): Promise<string> {
-  const pdf = await pdfjsLib.getDocument(documentInit as any).promise;
+async function readPdfText(arrayBuffer: ArrayBuffer): Promise<string> {
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer, disableWorker: true } as any).promise;
   const pages: string[] = [];
 
   for (let i = 1; i <= pdf.numPages; i++) {
@@ -60,24 +23,8 @@ async function readPdfText(documentInit: Record<string, unknown>): Promise<strin
 }
 
 export async function extractTextFromPDF(file: File): Promise<string> {
-  const forceCompatMode = !hasNativePromiseWithResolvers;
-
-  if (forceCompatMode) {
-    const arrayBuffer = await file.arrayBuffer();
-    return readPdfText({ data: arrayBuffer, disableWorker: true });
-  }
-
-  try {
-    const arrayBuffer = await file.arrayBuffer();
-    return await readPdfText({ data: arrayBuffer });
-  } catch (error) {
-    if (shouldRetryWithoutWorker(error)) {
-      // Re-read the file since the original buffer may be detached after worker transfer
-      const freshBuffer = await file.arrayBuffer();
-      return readPdfText({ data: freshBuffer, disableWorker: true });
-    }
-    throw error;
-  }
+  const arrayBuffer = await file.arrayBuffer();
+  return readPdfText(arrayBuffer);
 }
 
 export async function extractTextFromDocx(file: File): Promise<string> {
