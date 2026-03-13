@@ -34,15 +34,7 @@ const WordDisplay = ({ word }: WordDisplayProps) => {
     );
   }
 
-  // Scale font size based on word length to prevent overflow
-  const getFontSize = (w: string) => {
-    const len = w.length;
-    if (len > 25) return 'text-base sm:text-lg md:text-xl';
-    if (len > 20) return 'text-lg sm:text-xl md:text-2xl';
-    if (len > 14) return 'text-xl sm:text-2xl md:text-3xl';
-    if (len > 10) return 'text-2xl sm:text-3xl md:text-4xl';
-    return 'text-3xl sm:text-4xl md:text-5xl';
-  };
+  const fontSize = 'text-3xl sm:text-4xl md:text-5xl';
 
   return (
     <div ref={containerRef} className="relative flex items-center justify-center h-32 select-none overflow-hidden">
