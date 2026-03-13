@@ -60,17 +60,21 @@ async function readPdfText(documentInit: Record<string, unknown>): Promise<strin
 }
 
 export async function extractTextFromPDF(file: File): Promise<string> {
-  const arrayBuffer = await file.arrayBuffer();
-  const baseInit: Record<string, unknown> = { data: arrayBuffer };
   const forceCompatMode = !hasNativePromiseWithResolvers;
 
+  if (forceCompatMode) {
+    const arrayBuffer = await file.arrayBuffer();
+    return readPdfText({ data: arrayBuffer, disableWorker: true });
+  }
+
   try {
-    return await readPdfText(
-      forceCompatMode ? { ...baseInit, disableWorker: true } : baseInit
-    );
+    const arrayBuffer = await file.arrayBuffer();
+    return await readPdfText({ data: arrayBuffer });
   } catch (error) {
-    if (!forceCompatMode && shouldRetryWithoutWorker(error)) {
-      return readPdfText({ ...baseInit, disableWorker: true });
+    if (shouldRetryWithoutWorker(error)) {
+      // Re-read the file since the original buffer may be detached after worker transfer
+      const freshBuffer = await file.arrayBuffer();
+      return readPdfText({ data: freshBuffer, disableWorker: true });
     }
     throw error;
   }
