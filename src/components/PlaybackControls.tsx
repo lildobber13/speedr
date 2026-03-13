@@ -1,4 +1,4 @@
-import { Play, Pause, RotateCcw, SkipBack, SkipForward } from 'lucide-react';
+import { Play, Pause, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 
@@ -6,8 +6,6 @@ interface PlaybackControlsProps {
   isPlaying: boolean;
   onPlayPause: () => void;
   onRestart: () => void;
-  onSkipBack: () => void;
-  onSkipForward: () => void;
   wpm: number;
   onWpmChange: (wpm: number) => void;
   progress: number;
@@ -22,8 +20,6 @@ const PlaybackControls = ({
   isPlaying,
   onPlayPause,
   onRestart,
-  onSkipBack,
-  onSkipForward,
   wpm,
   onWpmChange,
   progress,
@@ -64,30 +60,12 @@ const PlaybackControls = ({
           <RotateCcw className="w-5 h-5" />
         </Button>
         <Button
-          variant="ghost"
-          size="icon"
-          onClick={onSkipBack}
-          disabled={disabled}
-          className="text-muted-foreground hover:text-foreground"
-        >
-          <SkipBack className="w-5 h-5" />
-        </Button>
-        <Button
           onClick={onPlayPause}
           disabled={disabled}
           size="icon"
           className="w-14 h-14 rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
         >
           {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-0.5" />}
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onSkipForward}
-          disabled={disabled}
-          className="text-muted-foreground hover:text-foreground"
-        >
-          <SkipForward className="w-5 h-5" />
         </Button>
       </div>
 
