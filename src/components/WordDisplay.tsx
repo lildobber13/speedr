@@ -47,16 +47,18 @@ const WordDisplay = ({ word }: WordDisplayProps) => {
   return (
     <div ref={containerRef} className="relative flex items-center justify-center h-32 select-none overflow-hidden">
       {/* Center guide line */}
-      <div className="absolute top-2 bottom-2 w-px bg-muted-foreground/20 left-1/2" />
+      <div className="absolute top-2 bottom-2 w-px bg-muted-foreground/20 left-1/2 -translate-x-1/2" />
 
-      <div
-        ref={wordRef}
-        className={`font-body font-medium ${getFontSize(word)} tracking-normal whitespace-nowrap`}
-        style={{ transform: `translateX(${offset}px)` }}
-      >
-        <span className="text-reader-text">{before}</span>
-        <span ref={pivotRef} className="text-pivot font-bold">{pivot}</span>
-        <span className="text-reader-text">{after}</span>
+      <div className="relative flex items-center justify-center w-full">
+        <div
+          ref={wordRef}
+          className={`font-body font-medium ${getFontSize(word)} tracking-normal whitespace-nowrap absolute`}
+          style={{ left: '50%', transform: `translateX(-50%)`, marginLeft: `${offset}px` }}
+        >
+          <span className="text-reader-text">{before}</span>
+          <span ref={pivotRef} className="text-pivot font-bold">{pivot}</span>
+          <span className="text-reader-text">{after}</span>
+        </div>
       </div>
     </div>
   );
