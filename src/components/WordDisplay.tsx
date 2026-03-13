@@ -44,7 +44,7 @@ const WordDisplay = ({ word }: WordDisplayProps) => {
       <div className="relative flex items-center justify-center w-full">
         <div
           ref={wordRef}
-          className={`font-body font-medium ${getFontSize(word)} tracking-normal whitespace-nowrap absolute`}
+          className={`font-body font-medium ${fontSize} tracking-normal whitespace-nowrap absolute`}
           style={{ left: '50%', transform: `translateX(-50%)`, marginLeft: `${offset}px` }}
         >
           <span className="text-reader-text">{before}</span>
