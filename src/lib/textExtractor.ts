@@ -7,20 +7,6 @@ import mammoth from 'mammoth';
 pdfjsLib.GlobalWorkerOptions.workerSrc = '';
 
 
-function extractErrorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  return String(error);
-}
-
-function shouldRetryWithoutWorker(error: unknown): boolean {
-  const message = extractErrorMessage(error).toLowerCase();
-  return (
-    message.includes('withresolvers') ||
-    message.includes('undefined is not a function') ||
-    message.includes('undefined is not a non-null object') ||
-    message.includes("can't convert undefined to object")
-  );
-}
 
 async function readPdfText(arrayBuffer: ArrayBuffer): Promise<string> {
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer, disableWorker: true } as any).promise;
