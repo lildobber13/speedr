@@ -59,8 +59,7 @@ export function tokenizeText(text: string): string[] {
 export function getPivotIndex(word: string): number {
   const len = word.length;
   if (len <= 1) return 0;
-  if (len <= 3) return 1;
-  // Slightly past 1/3 for better visual centering
-  return Math.ceil(len / 3) - 1;
+  if (len <= 5) return Math.floor(len / 2);
+  return Math.max(1, Math.floor(len / 3));
 }
 
