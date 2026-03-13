@@ -49,24 +49,26 @@ const PlaybackControls = ({
       </div>
 
       {/* Transport controls */}
-      <div className="flex items-center justify-center gap-2 sm:gap-4">
+      <div className="flex items-center relative">
         <Button
           variant="ghost"
           size="icon"
           onClick={onRestart}
           disabled={disabled}
-          className="text-muted-foreground hover:text-foreground"
+          className="absolute left-0 text-muted-foreground hover:text-foreground"
         >
           <RotateCcw className="w-5 h-5" />
         </Button>
-        <Button
-          onClick={onPlayPause}
-          disabled={disabled}
-          size="icon"
-          className="w-14 h-14 rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
-        >
-          {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-0.5" />}
-        </Button>
+        <div className="flex-1 flex justify-center">
+          <Button
+            onClick={onPlayPause}
+            disabled={disabled}
+            size="icon"
+            className="w-14 h-14 rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-0.5" />}
+          </Button>
+        </div>
       </div>
 
       {/* WPM control */}
